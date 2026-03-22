@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+logs/
+*.log
+models/*.caffemodel
+models/*.prototxt
+# Keep your trained model in the repo if small enough
+# models/mask_detector.model

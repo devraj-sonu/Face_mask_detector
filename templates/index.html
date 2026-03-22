@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MaskGuard AI · Face Mask Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<!-- ░░░ NOISE OVERLAY ░░░ -->
+<div class="noise"></div>
+
+<!-- ░░░ HEADER ░░░ -->
+<header>
+  <div class="logo">
+    <span class="logo-icon">⬡</span>
+    <span class="logo-text">MaskGuard<em>AI</em></span>
+  </div>
+  <nav>
+    <a href="#detect" class="nav-link active">Detect</a>
+    <a href="#dashboard" class="nav-link">Dashboard</a>
+    <a href="#logs" class="nav-link">Logs</a>
+  </nav>
+  <div class="status-pill" id="statusPill">
+    <span class="dot"></span> System Ready
+  </div>
+</header>
+
+<!-- ░░░ HERO ░░░ -->
+<section class="hero" id="detect">
+  <div class="hero-text">
+    <h1>Real-Time<br/><mark>Mask Detection</mark></h1>
+    <p>Upload an image or activate your webcam. The AI will detect faces, classify mask usage, and return confidence scores instantly.</p>
+  </div>
+  <div class="hero-badge">
+    <span>Powered by</span>
+    <strong>TensorFlow + OpenCV</strong>
+  </div>
+</section>
+
+<!-- ░░░ MAIN PANEL ░░░ -->
+<main>
+
+  <!-- Input Mode Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-mode="upload" onclick="switchMode('upload')">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      Upload Image
+    </button>
+    <button class="tab" data-mode="webcam" onclick="switchMode('webcam')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M20 7h-3l-2-3H9L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/></svg>
+      Webcam Live
+    </button>
+  </div>
+
+  <div class="panel-grid">
+
+    <!-- ── LEFT: Input ── -->
+    <div class="panel input-panel">
+      <div class="panel-label">INPUT</div>
+
+      <!-- Upload Mode -->
+      <div id="uploadMode">
+        <div class="drop-zone" id="dropZone"
+             onclick="document.getElementById('fileInput').click()"
+             ondragover="handleDragOver(event)"
+             ondrop="handleDrop(event)">
+          <div class="drop-icon">
+            <svg viewBox="0 0 64 64"><rect x="8" y="14" width="48" height="36" rx="4"/><path d="M22 32l10-10 10 10M32 22v20"/></svg>
+          </div>
+          <p class="drop-title">Drop image here</p>
+          <p class="drop-sub">or click to browse · JPG, PNG, WEBP</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" hidden onchange="handleFileSelect(event)" />
+        <div id="imagePreview" class="preview-box" style="display:none">
+          <img id="previewImg" alt="Preview" />
+          <button class="clear-btn" onclick="clearUpload()">✕ Clear</button>
+        </div>
+        <button class="detect-btn" id="uploadDetectBtn" onclick="detectFromUpload()" disabled>
+          <span class="btn-icon">⬡</span> Analyse Image
+        </button>
+      </div>
+
+      <!-- Webcam Mode -->
+      <div id="webcamMode" style="display:none">
+        <div class="webcam-wrapper">
+          <video id="webcamVideo" autoplay muted playsinline></video>
+          <canvas id="webcamCanvas" style="display:none"></canvas>
+          <div class="webcam-overlay" id="webcamOverlay">
+            <span>Camera Off</span>
+          </div>
+        </div>
+        <div class="webcam-controls">
+          <button class="detect-btn green" id="startCamBtn" onclick="startWebcam()">
+            ▶ Start Camera
+          </button>
+          <button class="detect-btn red" id="stopCamBtn" onclick="stopWebcam()" style="display:none">
+            ■ Stop Camera
+          </button>
+          <button class="detect-btn" id="snapBtn" onclick="snapAndDetect()" style="display:none" disabled>
+            ◉ Capture & Detect
+          </button>
+        </div>
+        <label class="toggle-row">
+          <input type="checkbox" id="autoDetect" onchange="toggleAutoDetect()" />
+          <span class="toggle"></span>
+          Auto-detect every 2 seconds
+        </label>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: Output ── -->
+    <div class="panel output-panel">
+      <div class="panel-label">RESULT</div>
+
+      <div class="result-placeholder" id="resultPlaceholder">
+        <div class="placeholder-icon">◎</div>
+        <p>Results will appear here after detection</p>
+      </div>
+
+      <div id="resultContent" style="display:none">
+        <!-- Annotated Image -->
+        <div class="annotated-wrap">
+          <img id="annotatedImg" alt="Annotated" />
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-row" id="summaryCards"></div>
+
+        <!-- Detailed predictions list -->
+        <div class="pred-list" id="predList"></div>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div class="loader" id="loader" style="display:none">
+        <div class="spinner"></div>
+        <p>Analysing…</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ░░░ ALERT BANNER ░░░ -->
+<div class="alert-banner" id="alertBanner" style="display:none">
+  <span class="alert-icon">⚠</span>
+  <strong>NO MASK DETECTED</strong> — Please wear a face mask!
+  <button onclick="dismissAlert()">✕</button>
+</div>
+
+<!-- ░░░ DASHBOARD ░░░ -->
+<section class="dashboard-section" id="dashboard">
+  <div class="section-header">
+    <h2>Detection Dashboard</h2>
+    <button class="refresh-btn" onclick="loadStats()">↻ Refresh</button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card" id="sc-total">
+      <div class="stat-val">—</div>
+      <div class="stat-label">Total Detections</div>
+    </div>
+    <div class="stat-card green" id="sc-mask">
+      <div class="stat-val">—</div>
+      <div class="stat-label">With Mask</div>
+    </div>
+    <div class="stat-card red" id="sc-nomask">
+      <div class="stat-val">—</div>
+      <div class="stat-label">No Mask</div>
+    </div>
+    <div class="stat-card" id="sc-rate">
+      <div class="stat-val">—</div>
+      <div class="stat-label">Compliance Rate</div>
+    </div>
+  </div>
+
+  <div class="chart-wrapper">
+    <canvas id="activityChart"></canvas>
+  </div>
+</section>
+
+<!-- ░░░ LOGS ░░░ -->
+<section class="logs-section" id="logs">
+  <div class="section-header">
+    <h2>Detection Logs</h2>
+    <button class="refresh-btn" onclick="loadLogs()">↻ Refresh</button>
+  </div>
+  <div class="log-table-wrap">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Faces</th>
+          <th>Mask</th>
+          <th>No Mask</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="logTableBody">
+        <tr><td colspan="5" class="empty-row">No logs yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ░░░ FOOTER ░░░ -->
+<footer>
+  <p>MaskGuard AI · College Project · Built with TensorFlow, OpenCV &amp; Flask</p>
+</footer>
+
+<!-- Alert Sound (generated via Web Audio API – no file needed) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
