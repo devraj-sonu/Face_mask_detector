@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ⬡ MaskGuard AI — Face Mask Detection Web App
 
 > **College Project** · TensorFlow + OpenCV + Flask  
@@ -173,3 +174,6 @@ Free tiers have ephemeral storage. Options:
 
 College Project — Face Mask Detection using Deep Learning  
 Built with ❤️ using TensorFlow + OpenCV + Flask
+=======
+# Face_mask_detector
+>>>>>>> a217ea31d51ead4f02a15de0e38b6380a49c6cdb
